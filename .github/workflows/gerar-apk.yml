@@ -23,8 +23,10 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Configurar Android SDK
-        uses: android-actions/setup-android@v3
+       - name: Configurar Android SDK
+    uses: android-actions/setup-android@v3
+    with:
+    packages: platform-tools
 
       - name: Instalar Android API 36
         run: sdkmanager --install 'platforms;android-36' 'build-tools;36.0.0'
