@@ -39,6 +39,20 @@ fun currentStreak(attendance: Set<LocalDate>, today: LocalDate = LocalDate.now()
     return count
 }
 
+fun bestStreak(attendance: Set<LocalDate>): Int {
+    if (attendance.isEmpty()) return 0
+    val dates = attendance.toList().sorted()
+    var best = 1
+    var current = 1
+    for (i in 1 until dates.size) {
+        if (dates[i - 1].plusDays(1) == dates[i]) {
+            current++
+            if (current > best) best = current
+        } else current = 1
+    }
+    return best
+}
+
 @Composable
 fun DisciplineTabV2(attendance: Set<LocalDate>, prefs: ForjaPrefs,
                     onToggle: (LocalDate) -> Unit, onPrefsChange: () -> Unit) {
@@ -53,7 +67,6 @@ fun DisciplineTabV2(attendance: Set<LocalDate>, prefs: ForjaPrefs,
     val daysYear = attendance.count { it.year == year }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(18.dp),
         verticalArrangement = Arrangement.spacedBy(15.dp)) {
-        ForjaHeader("Compromisso", "Sua disciplina", "Cada presença conta. Sem precisar registrar um treino.")
         ForjaPanel(Modifier.fillMaxWidth()) {
             ForjaTitleRow("Meta semanal", "$weekCount / ${prefs.weeklyGoal} dias")
             Spacer(Modifier.height(10.dp))
@@ -78,7 +91,11 @@ fun DisciplineTabV2(attendance: Set<LocalDate>, prefs: ForjaPrefs,
         }
         Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
             Metric("Sequência atual", "${currentStreak(attendance)} dias", Modifier.weight(1f), Lime)
-            Metric("No ano de $year", "$daysYear dias", Modifier.weight(1f))
+            Metric("Melhor sequência", "${bestStreak(attendance)} dias", Modifier.weight(1f))
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+            Metric("No ano de $year", "$daysYear dias", Modifier.weight(1f), Lime)
+            Metric("Média mensal", if (daysYear == 0) "0" else "${daysYear / maxOf(1, today.monthValue)} dias", Modifier.weight(1f))
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             FilterChip(selected = !annual, onClick = { annual = false },

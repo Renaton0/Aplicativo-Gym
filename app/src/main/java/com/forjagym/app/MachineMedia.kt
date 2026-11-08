@@ -7,7 +7,7 @@ import java.net.URLEncoder
 /** Real photographs from Wikimedia Commons. Photos are references, not guaranteed to show the exact model. */
 data class CommonsPhoto(val file: String, val author: String, val license: String) {
     val url: String get() = "https://commons.wikimedia.org/wiki/Special:FilePath/" +
-        URLEncoder.encode(file.replace(' ', '_'), "UTF-8").replace("+", "%20") + "?width=600"
+        URLEncoder.encode(file.replace(' ', '_'), "UTF-8").replace("+", "%20") + "?width=700"
     val attributionUrl: String get() = "https://commons.wikimedia.org/wiki/File:" +
         URLEncoder.encode(file.replace(' ', '_'), "UTF-8").replace("+", "%20")
 }
@@ -27,44 +27,102 @@ object MachineMedia {
     private val calf = CommonsPhoto("Seated calf machine.jpg", "Teemeah", "CC BY-SA 4.0")
     private val treadmill = CommonsPhoto("Treadmills.webp", "Wikideas1", "CC0 1.0")
     private val dumbbell = CommonsPhoto("Dumbells.jpg", "Keith McDuffee", "CC BY 2.0")
+    private val bike = CommonsPhoto("Stationary bicycle.webp", "Wikideas1", "CC0 1.0")
+    private val elliptical = CommonsPhoto("Elliptical trainer.jpg", "BrokenSphere", "CC BY-SA 3.0")
+    private val stair = CommonsPhoto("Stair climber exercise machine.jpg", "Bait30", "CC BY-SA 4.0")
+    private val rower = CommonsPhoto("Concept2 rowing machine.jpg", "B242", "CC BY-SA 3.0")
+    private val skierg = CommonsPhoto("Concept2 SkiErg.jpg", "Mikael Häggström", "CC0 1.0")
+    private val airBike = CommonsPhoto("Assault air bike.jpg", "Bait30", "CC BY-SA 4.0")
+    private val preacher = CommonsPhoto("Preacher curl bench.jpg", "Raysonho", "CC0 1.0")
+    private val dipMachine = CommonsPhoto("Seated dip machine.jpg", "Teemeah", "CC BY-SA 4.0")
+    private val abduct = CommonsPhoto("Hip abduction machine.jpg", "Teemeah", "CC BY-SA 4.0")
+    private val adduct = CommonsPhoto("Hip adduction machine.jpg", "Teemeah", "CC BY-SA 4.0")
+    private val hipThrust = CommonsPhoto("Hip thrust machine.jpg", "Teemeah", "CC BY-SA 4.0")
+    private val gluteKickback = CommonsPhoto("Glute kickback machine.jpg", "Teemeah", "CC BY-SA 4.0")
+    private val crunch = CommonsPhoto("Abdominal crunch machine.jpg", "Teemeah", "CC BY-SA 4.0")
+    private val romanChair = CommonsPhoto("Roman chair exercise equipment.jpg", "TobiasToMar", "CC BY-SA 4.0")
+    private val battleRope = CommonsPhoto("Battle ropes exercise.jpg", "M.O. Stevens", "CC BY 3.0")
+    private val kettlebell = CommonsPhoto("Kettlebell.jpg", "Christian Jansky", "CC BY-SA 2.5")
+    private val sled = CommonsPhoto("Pushing sled exercise.jpg", "M.O. Stevens", "CC BY 3.0")
+    private val trapBar = CommonsPhoto("Trap bar deadlift.jpg", "M.O. Stevens", "CC BY 3.0")
+    private val bench = CommonsPhoto("Bench press gym.jpg", "Mikael Häggström", "CC0 1.0")
+    private val pullup = CommonsPhoto("Pull-up bar gym.jpg", "M.O. Stevens", "CC BY 3.0")
+    private val ropeJump = CommonsPhoto("Jump rope training.jpg", "N509FZ", "CC BY-SA 4.0")
 
-    /** Only associate with a fitting piece of equipment. No arbitrary photo used as exact identification. */
+    /**
+     * We prefer a representative photo for each exercise. When no close reference is available,
+     * return null rather than showing a misleading machine.
+     */
     fun forExercise(exercise: Exercise): CommonsPhoto? {
         val eq = exercise.equipment.lowercase()
         val name = exercise.name.lowercase()
         return when {
-            "esteira" in eq -> treadmill
+            "chest press" in eq || "supino" in name && ("máquina" in eq || "articulado" in eq || "press" in eq) -> press
+            "peck deck" in eq || "voador" in eq || "crucifixo" in name && "polia" !in eq && "halter" !in eq -> pec
+            "pulley alto" in eq || "pulldown" in name -> lat
+            "high row" in eq || "remada alta" in name -> highRow
+            "polia" in eq || "crossover" in name || "cabo" in eq || "corda" in eq -> cable
+            "máquina smith" in eq -> smith
             "leg press" in eq -> legPress
             "extensora" in eq -> legExt
             "flexora" in eq -> legCurl
-            "sissy squat" in eq -> squat
-            "máquina smith" in eq -> smith
-            "sóleo" in eq || "panturrilha" in eq -> calf
-            "peck deck" in eq || "voador" in eq -> pec
-            "chest press" in eq || "supino" in eq && ("máquina" in eq || "articulado" in eq) -> press
-            "high row" in eq || "pulley unilateral" in eq -> highRow
-            "pulley alto" in eq || "pulldown" in name -> lat
-            "polia" in eq || "cabo" in eq || "pulley" in eq -> cable
-            "halter" in eq -> dumbbell
-            "máquina" in eq || "articulado" in eq || "graviton" in eq -> general
+            "hack squat" in eq || "pendulum" in eq || "v-squat" in eq || "belt squat" in eq || "agachamento" in name && "máquina" in eq -> squat
+            "panturrilha" in name || "sóleo" in eq -> calf
+            "esteira" in eq -> treadmill
+            "bike" in eq && "air" !in eq -> bike
+            "elíptico" in eq || "transport" in eq -> elliptical
+            "stair" in eq || "escada" in name -> stair
+            "remo" in eq -> rower
+            "skierg" in eq || "esqui" in eq -> skierg
+            "air bike" in eq -> airBike
+            "scott" in eq || "preacher" in eq -> preacher
+            "dip" in eq || "mergulho" in name -> dipMachine
+            "abdutora" in eq -> abduct
+            "adutora" in eq -> adduct
+            "hip thrust" in eq || "elevação pélvica" in name -> hipThrust
+            "glúteo" in eq || "coice" in name || "extensão do quadril" in eq -> gluteKickback
+            "crunch" in eq || "abdominal máquina" in name -> crunch
+            "cadeira romana" in eq || "banco romano" in eq || "hiperextensão" in name -> romanChair
+            "battle ropes" in eq || "corda naval" in name -> battleRope
+            "kettlebell" in eq || "kettlebell" in name -> kettlebell
+            "trenó" in eq -> sled
+            "trap bar" in eq -> trapBar
+            "barra fixa" in eq || "graviton" in eq -> pullup
+            "barra" in eq || "banco" in eq -> bench
+            "halter" in eq || "anilha" in eq -> dumbbell
+            "corda" == eq.lowercase() || "pular corda" in name -> ropeJump
+            "máquina" in eq || "articulado" in eq -> general
             else -> null
         }
     }
 }
 
 class ForjaPrefs(context: Context) {
-    private val data = context.getSharedPreferences("forja_v2_preferences", Context.MODE_PRIVATE)
+    private val data = context.getSharedPreferences("forja_v21_preferences", Context.MODE_PRIVATE)
     var weeklyGoal: Int
         get() = data.getInt("goal_week", 4).coerceIn(1, 7)
         set(value) { data.edit().putInt("goal_week", value.coerceIn(1, 7)).apply() }
     var monthlyGoal: Int
         get() = data.getInt("goal_month", 16).coerceIn(1, 31)
         set(value) { data.edit().putInt("goal_month", value.coerceIn(1, 31)).apply() }
+
     fun customPhoto(exerciseId: String): String? = data.getString("custom_photo_$exerciseId", null)
     fun savePhoto(exerciseId: String, uri: Uri?) {
         data.edit().apply {
             if (uri == null) remove("custom_photo_$exerciseId") else putString("custom_photo_$exerciseId", uri.toString())
         }.apply()
+    }
+
+    fun machineSeat(exerciseId: String): String = data.getString("machine_seat_$exerciseId", "") ?: ""
+    fun machineAdjust(exerciseId: String): String = data.getString("machine_adjust_$exerciseId", "") ?: ""
+    fun machineNote(exerciseId: String): String = data.getString("machine_note_$exerciseId", "") ?: ""
+
+    fun saveMachineProfile(exerciseId: String, seat: String, adjust: String, note: String) {
+        data.edit()
+            .putString("machine_seat_$exerciseId", seat.trim())
+            .putString("machine_adjust_$exerciseId", adjust.trim())
+            .putString("machine_note_$exerciseId", note.trim())
+            .apply()
     }
 }
 
@@ -105,5 +163,30 @@ object ExerciseGuide {
             "esteira" in n || "bicicleta" in n || "elíptico" in n -> listOf("Ajuste o aparelho ao seu tamanho.", "Inicie em ritmo confortável e aumente gradualmente.", "Reduza a intensidade antes de encerrar a atividade.")
             else -> listOf("Ajuste o equipamento à sua altura e mobilidade.", "Faça o movimento com postura estável e sem compensações.", "Controle a carga e o retorno; interrompa se houver dor.")
         }
+    }
+}
+
+object ExerciseSupport {
+    fun alternatives(exercise: Exercise): List<Exercise> {
+        val sameGroup = Catalog.all.filter { it.group == exercise.group && it.id != exercise.id }
+        val ranked = sameGroup.sortedByDescending {
+            similarityScore(exercise, it)
+        }
+        return ranked.take(4)
+    }
+
+    private fun similarityScore(a: Exercise, b: Exercise): Int {
+        var score = 0
+        if (a.group == b.group) score += 5
+        val aName = a.name.lowercase()
+        val bName = b.name.lowercase()
+        val aEq = a.equipment.lowercase()
+        val bEq = b.equipment.lowercase()
+        if (aEq == bEq) score += 4
+        listOf("supino", "puxada", "remada", "rosca", "tríceps", "agachamento", "panturrilha", "abdominal", "extensora", "flexora", "elevação", "terra", "afundo", "coice").forEach {
+            if (it in aName && it in bName) score += 3
+        }
+        if (aEq.substringBefore(" ") == bEq.substringBefore(" ")) score += 1
+        return score
     }
 }

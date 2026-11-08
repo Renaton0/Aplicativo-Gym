@@ -11,10 +11,8 @@ jobs:
   apk-debug:
     name: Compilar APK instalavel
     runs-on: ubuntu-latest
-
     permissions:
       contents: read
-
     steps:
       - name: Baixar codigo do repositorio
         uses: actions/checkout@v4

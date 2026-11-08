@@ -2,14 +2,31 @@ package com.forjagym.app
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.layout.*
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.rounded.CalendarMonth
+import androidx.compose.material.icons.rounded.Dashboard
+import androidx.compose.material.icons.rounded.FitnessCenter
+import androidx.compose.material.icons.rounded.GridView
+import androidx.compose.material.icons.rounded.ShowChart
+import androidx.compose.material3.Icon
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 
@@ -21,8 +38,9 @@ class MainActivity : ComponentActivity() {
         val prefs = ForjaPrefs(applicationContext)
         window.statusBarColor = android.graphics.Color.rgb(16, 22, 27)
         window.navigationBarColor = android.graphics.Color.rgb(16, 22, 27)
-        setContent { ForjaTheme { GymAppV2(database, prefs) } }
+        setContent { ForjaTheme { GymAppV21(database, prefs) } }
     }
+
     override fun onDestroy() {
         database.close()
         super.onDestroy()
@@ -30,7 +48,7 @@ class MainActivity : ComponentActivity() {
 }
 
 private data class Tab(val title: String, val icon: ImageVector)
-private val tabsV2 = listOf(
+private val tabsV21 = listOf(
     Tab("Hoje", Icons.Rounded.Dashboard),
     Tab("Rotinas", Icons.Rounded.FitnessCenter),
     Tab("Aparelhos", Icons.Rounded.GridView),
@@ -39,22 +57,29 @@ private val tabsV2 = listOf(
 )
 
 @Composable
-private fun GymAppV2(db: GymDatabase, prefs: ForjaPrefs) {
+private fun GymAppV21(db: GymDatabase, prefs: ForjaPrefs) {
     var tab by rememberSaveable { mutableIntStateOf(0) }
     var exerciseId by rememberSaveable { mutableStateOf<String?>(null) }
     var routineId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var activeWorkoutId by rememberSaveable { mutableStateOf<Long?>(null) }
     var progressId by rememberSaveable { mutableStateOf(Catalog.all.first().id) }
     var revision by remember { mutableIntStateOf(0) }
     val refresh: () -> Unit = { revision++ }
     val workouts = remember(revision) { db.workouts() }
     val attendance = remember(revision) { db.attendance() }
-    BackHandler(enabled = exerciseId != null || routineId != null) {
-        if (exerciseId != null) exerciseId = null else routineId = null
+
+    BackHandler(enabled = exerciseId != null || routineId != null || activeWorkoutId != null) {
+        when {
+            exerciseId != null -> exerciseId = null
+            routineId != null -> routineId = null
+            activeWorkoutId != null -> activeWorkoutId = null
+        }
     }
+
     Scaffold(containerColor = Ink, bottomBar = {
-        if (exerciseId == null && routineId == null) {
+        if (exerciseId == null && routineId == null && activeWorkoutId == null) {
             NavigationBar(containerColor = SurfaceDark) {
-                tabsV2.forEachIndexed { index, t ->
+                tabsV21.forEachIndexed { index, t ->
                     NavigationBarItem(
                         selected = index == tab,
                         onClick = { tab = index },
@@ -62,8 +87,10 @@ private fun GymAppV2(db: GymDatabase, prefs: ForjaPrefs) {
                         label = { Text(t.title, maxLines = 1) },
                         alwaysShowLabel = true,
                         colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = Ink, selectedTextColor = Lime,
-                            indicatorColor = Lime, unselectedIconColor = Muted,
+                            selectedIconColor = Ink,
+                            selectedTextColor = Lime,
+                            indicatorColor = Lime,
+                            unselectedIconColor = Muted,
                             unselectedTextColor = Muted
                         )
                     )
@@ -72,30 +99,84 @@ private fun GymAppV2(db: GymDatabase, prefs: ForjaPrefs) {
         }
     }) { contentPadding ->
         Box(Modifier.fillMaxSize().padding(contentPadding)) {
-            val e = exerciseId?.let { Catalog.get(it) }
-            if (e != null) {
-                ExerciseDetailV2(e, db, prefs, revision, refresh,
-                    onBack = { exerciseId = null },
-                    onShowProgress = { progressId = e.id; exerciseId = null; routineId = null; tab = 4 },
-                    workouts = workouts)
-            } else if (routineId != null) {
-                val routine = workouts.firstOrNull { it.id == routineId }
-                if (routine != null) {
-                    RoutineEditorV2(routine, db, revision, refresh,
-                        onBack = { routineId = null }, onExercise = { exerciseId = it })
-                } else LaunchedEffect(routineId) { routineId = null }
-            } else when (tab) {
-                0 -> DashboardV2(workouts, attendance, prefs, db, revision,
-                    onMarkToday = { db.toggleAttendance(java.time.LocalDate.now()); refresh() },
-                    onRoutines = { tab = 1 }, onCalendar = { tab = 3 },
-                    onExercise = { exerciseId = it })
-                1 -> RoutinesTabV2(workouts, db, refresh, onOpen = { routineId = it })
-                2 -> LibraryTabV2(prefs, revision, onOpen = { exerciseId = it })
-                3 -> DisciplineTabV2(attendance, prefs,
-                    onToggle = { db.toggleAttendance(it); refresh() }, onPrefsChange = refresh)
-                else -> LoadsTabV2(db, progressId,
-                    onSelect = { progressId = it }, onExplore = { exerciseId = it },
-                    revision = revision, onChange = refresh)
+            val selectedExercise = exerciseId?.let { Catalog.get(it) }
+            when {
+                activeWorkoutId != null -> {
+                    val workout = workouts.firstOrNull { it.id == activeWorkoutId }
+                    if (workout != null) {
+                        ActiveWorkoutScreenV2(
+                            workout = workout,
+                            planned = remember(workout.id, revision) { db.workoutExercises(workout.id) },
+                            db = db,
+                            prefs = prefs,
+                            onBack = { activeWorkoutId = null },
+                            onOpenExercise = { exerciseId = it },
+                            onOpenLoads = {
+                                progressId = it
+                                activeWorkoutId = null
+                                tab = 4
+                            }
+                        )
+                    } else {
+                        LaunchedEffect(activeWorkoutId) { activeWorkoutId = null }
+                    }
+                }
+
+                selectedExercise != null -> {
+                    ExerciseDetailV2(
+                        exercise = selectedExercise,
+                        db = db,
+                        prefs = prefs,
+                        revision = revision,
+                        onChange = refresh,
+                        onBack = { exerciseId = null },
+                        onShowProgress = {
+                            progressId = selectedExercise.id
+                            exerciseId = null
+                            tab = 4
+                        },
+                        workouts = workouts,
+                        onOpenAlternative = { exerciseId = it }
+                    )
+                }
+
+                routineId != null -> {
+                    val routine = workouts.firstOrNull { it.id == routineId }
+                    if (routine != null) {
+                        RoutineEditorV2(
+                            workout = routine,
+                            db = db,
+                            prefs = prefs,
+                            revision = revision,
+                            onChange = refresh,
+                            onBack = { routineId = null },
+                            onExercise = { exerciseId = it }
+                        )
+                    } else LaunchedEffect(routineId) { routineId = null }
+                }
+
+                else -> when (tab) {
+                    0 -> DashboardV2(
+                        workouts = workouts,
+                        attendance = attendance,
+                        prefs = prefs,
+                        db = db,
+                        revision = revision,
+                        onMarkToday = { db.toggleAttendance(java.time.LocalDate.now()); refresh() },
+                        onRoutines = { tab = 1 },
+                        onCalendar = { tab = 3 },
+                        onExercise = { exerciseId = it },
+                        onStartWorkout = { activeWorkoutId = it }
+                    )
+
+                    1 -> RoutinesTabV2(workouts, db, prefs, refresh, onOpen = { routineId = it })
+                    2 -> LibraryTabV2(prefs, revision, onOpen = { exerciseId = it })
+                    3 -> DisciplineTabV2(attendance, prefs,
+                        onToggle = { db.toggleAttendance(it); refresh() }, onPrefsChange = refresh)
+                    else -> LoadsTabV2(db, progressId,
+                        onSelect = { progressId = it }, onExplore = { exerciseId = it },
+                        revision = revision, onChange = refresh)
+                }
             }
         }
     }

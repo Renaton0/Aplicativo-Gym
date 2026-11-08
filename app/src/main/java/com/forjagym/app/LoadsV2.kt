@@ -1,15 +1,37 @@
 package com.forjagym.app
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.rounded.DeleteOutline
+import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -18,13 +40,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import java.time.format.DateTimeFormatter
-import java.util.Locale
 import kotlin.math.max
 
-/** One-tap repeat of previous load. Weight and reps also editable without leaving the exercise. */
 @Composable
 fun QuickLoadV2(exercise: Exercise, entries: List<WeightEntry>, onSave: (Double, Int) -> Unit) {
     val latest = entries.lastOrNull()
+    val bestBefore = entries.maxOfOrNull { it.weight } ?: 0.0
     var kgText by remember(exercise.id, latest?.id) {
         mutableStateOf(latest?.weight?.let(::displayKg) ?: "")
     }
@@ -40,7 +61,7 @@ fun QuickLoadV2(exercise: Exercise, entries: List<WeightEntry>, onSave: (Double,
         Spacer(Modifier.height(6.dp))
         Text(if (latest == null) "Primeiro registro deste exercício" else
             "Último: ${displayKg(latest.weight)} kg × ${latest.reps} reps",
-            color = Muted, style = MaterialTheme.typography.bodySmall)
+            color = Muted, style = androidx.compose.material3.MaterialTheme.typography.bodySmall)
         Spacer(Modifier.height(15.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalAlignment = Alignment.CenterVertically) {
@@ -72,12 +93,12 @@ fun QuickLoadV2(exercise: Exercise, entries: List<WeightEntry>, onSave: (Double,
             "Repetir carga anterior" else "Salvar carga de hoje", onClick = {
             if (valid) {
                 onSave(kg!!, reps!!)
-                feedback = "Carga registrada com sucesso"
+                feedback = if (kg > bestBefore) "Novo recorde pessoal!" else "Carga registrada com sucesso"
             }
         }, Modifier.fillMaxWidth(), enabled = valid)
         if (feedback.isNotBlank()) {
             Spacer(Modifier.height(6.dp))
-            Text(feedback, color = Lime, style = MaterialTheme.typography.bodySmall)
+            Text(feedback, color = Lime, style = androidx.compose.material3.MaterialTheme.typography.bodySmall)
         }
     }
 }
@@ -90,16 +111,17 @@ fun LoadsTabV2(db: GymDatabase, selectedId: String, onSelect: (String) -> Unit,
     val withHistory = remember(revision) { db.exercisesWithLoads().toList().sorted() }
     var selecting by remember { mutableStateOf(false) }
     var deleting by remember { mutableStateOf<WeightEntry?>(null) }
+    val last = history.lastOrNull()
+    val best = history.maxOfOrNull { it.weight }
+    val totalVolume = history.sumOf { it.weight * it.reps }
+    val bestEstimatedRm = history.maxOfOrNull { it.weight * (1 + it.reps / 30.0) }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(18.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        item { ForjaHeader("Performance", "Progressão de carga", "Última carga, histórico e evolução real") }
         item {
             ForjaPanel(Modifier.fillMaxWidth()) {
-                Text("EXERCÍCIO ATUAL", color = Lime,
-                    style = MaterialTheme.typography.labelSmall)
-                Spacer(Modifier.height(7.dp))
-                Text(e.name, color = White, style = MaterialTheme.typography.titleLarge)
-                Text(e.equipment, color = Muted, style = MaterialTheme.typography.bodySmall)
+                Text(e.name, color = White, style = androidx.compose.material3.MaterialTheme.typography.titleLarge)
+                Text(e.group + " • " + e.equipment, color = Muted,
+                    style = androidx.compose.material3.MaterialTheme.typography.bodySmall)
                 Spacer(Modifier.height(10.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
                     OutlinedButton(onClick = { selecting = true }, modifier = Modifier.weight(1f)) {
@@ -107,15 +129,16 @@ fun LoadsTabV2(db: GymDatabase, selectedId: String, onSelect: (String) -> Unit,
                     }
                     OutlinedButton(onClick = { onExplore(e.id) }) {
                         Icon(Icons.Rounded.Info, "Ficha do exercício")
+                        Spacer(Modifier.width(5.dp))
+                        Text("Ficha")
                     }
                 }
             }
         }
         if (withHistory.isNotEmpty()) item {
-            Text("REGISTRADOS", color = Muted, style = MaterialTheme.typography.labelSmall)
+            Text("REGISTRADOS", color = Muted, style = androidx.compose.material3.MaterialTheme.typography.labelSmall)
             Spacer(Modifier.height(7.dp))
-            androidx.compose.foundation.lazy.LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+            androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
                 items(withHistory) { id ->
                     FilterChip(selected = e.id == id, onClick = { onSelect(id) },
                         label = { Text(Catalog.get(id)?.name ?: id) },
@@ -125,13 +148,17 @@ fun LoadsTabV2(db: GymDatabase, selectedId: String, onSelect: (String) -> Unit,
         }
         item { QuickLoadV2(e, history, onSave = { kg, reps -> db.addLoad(e.id, kg, reps); onChange() }) }
         item {
-            val last = history.lastOrNull()
-            val best = history.maxOfOrNull { it.weight }
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Metric("Última carga", last?.let { "${displayKg(it.weight)} kg" } ?: "—",
                     Modifier.weight(1f), Lime)
                 Metric("Recorde", best?.let { "${displayKg(it)} kg" } ?: "—",
                     Modifier.weight(1f), White)
+            }
+        }
+        item {
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Metric("Volume total", if (history.isEmpty()) "—" else "${displayKg(totalVolume)} kg", Modifier.weight(1f), Lime)
+                Metric("1RM estimado", bestEstimatedRm?.let { "${displayKg(it)} kg" } ?: "—", Modifier.weight(1f))
             }
         }
         item {
@@ -143,7 +170,7 @@ fun LoadsTabV2(db: GymDatabase, selectedId: String, onSelect: (String) -> Unit,
                 } else {
                     val change = history.last().weight - history.first().weight
                     Text("Desde o início: ${if (change > 0) "+" else ""}${displayKg(change)} kg",
-                        color = Lime, style = MaterialTheme.typography.bodySmall)
+                        color = Lime, style = androidx.compose.material3.MaterialTheme.typography.bodySmall)
                     Spacer(Modifier.height(14.dp))
                     LoadLineV2(history.takeLast(30), Modifier.fillMaxWidth().height(155.dp))
                 }
@@ -158,7 +185,11 @@ fun LoadsTabV2(db: GymDatabase, selectedId: String, onSelect: (String) -> Unit,
                         Text("${displayKg(item.weight)} kg × ${item.reps} reps", color = White,
                             fontWeight = FontWeight.SemiBold)
                         Text(item.date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")),
-                            color = Muted, style = MaterialTheme.typography.bodySmall)
+                            color = Muted, style = androidx.compose.material3.MaterialTheme.typography.bodySmall)
+                    }
+                    if (best != null && item.weight == best) {
+                        Text("PR", color = Lime, fontWeight = FontWeight.Bold)
+                        Spacer(Modifier.width(8.dp))
                     }
                     IconButton(onClick = { deleting = item }) {
                         Icon(Icons.Rounded.DeleteOutline, "Excluir registro", tint = Muted)
@@ -167,9 +198,12 @@ fun LoadsTabV2(db: GymDatabase, selectedId: String, onSelect: (String) -> Unit,
             }
         }
     }
-    if (selecting) ExerciseSelectorV2(onDismiss = { selecting = false }, onChoose = {
-        onSelect(it.id); selecting = false
-    })
+    if (selecting) {
+        // Temporary prefs for images are not available here; show text-only selector fallback.
+        SimpleExerciseSelector(onDismiss = { selecting = false }, onChoose = {
+            onSelect(it.id); selecting = false
+        })
+    }
     deleting?.let { entry ->
         AlertDialog(onDismissRequest = { deleting = null }, title = { Text("Excluir registro?") },
             text = { Text("Essa carga será removida do histórico.") },
@@ -181,7 +215,7 @@ fun LoadsTabV2(db: GymDatabase, selectedId: String, onSelect: (String) -> Unit,
 }
 
 @Composable
-fun ExerciseSelectorV2(onDismiss: () -> Unit, onChoose: (Exercise) -> Unit) {
+private fun SimpleExerciseSelector(onDismiss: () -> Unit, onChoose: (Exercise) -> Unit) {
     var query by remember { mutableStateOf("") }
     val filtered = remember(query) { Catalog.all.filter {
         query.isBlank() || it.name.contains(query, true) || it.equipment.contains(query, true)
@@ -194,12 +228,11 @@ fun ExerciseSelectorV2(onDismiss: () -> Unit, onChoose: (Exercise) -> Unit) {
                 Spacer(Modifier.height(8.dp))
                 LazyColumn(Modifier.heightIn(max = 360.dp)) {
                     items(filtered, key = { it.id }) { exercise ->
-                        TextButton(onClick = { onChoose(exercise) },
-                            modifier = Modifier.fillMaxWidth()) {
+                        TextButton(onClick = { onChoose(exercise) }, modifier = Modifier.fillMaxWidth()) {
                             Column(Modifier.fillMaxWidth()) {
                                 Text(exercise.name, color = White)
                                 Text(exercise.group, color = Muted,
-                                    style = MaterialTheme.typography.bodySmall)
+                                    style = androidx.compose.material3.MaterialTheme.typography.bodySmall)
                             }
                         }
                     }
@@ -224,7 +257,7 @@ private fun LoadLineV2(entries: List<WeightEntry>, modifier: Modifier = Modifier
         }
         val points = values.mapIndexed { index, value ->
             val x = if (values.size == 1) (left + right) / 2f
-                else left + index.toFloat() / (values.size - 1) * (right - left)
+            else left + index.toFloat() / (values.size - 1) * (right - left)
             val y = bottom - (value - lo) / range * (bottom - top)
             Offset(x, y)
         }

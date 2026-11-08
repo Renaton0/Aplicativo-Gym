@@ -1,15 +1,31 @@
 package com.forjagym.app
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.*
-import androidx.compose.material3.*
+import androidx.compose.material.icons.rounded.CalendarMonth
+import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.FitnessCenter
+import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.RadioButtonUnchecked
+import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import java.time.LocalDate
@@ -18,9 +34,18 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 @Composable
-fun DashboardV2(workouts: List<Workout>, attendance: Set<LocalDate>, prefs: ForjaPrefs,
-                db: GymDatabase, revision: Int, onMarkToday: () -> Unit, onRoutines: () -> Unit,
-                onCalendar: () -> Unit, onExercise: (String) -> Unit) {
+fun DashboardV2(
+    workouts: List<Workout>,
+    attendance: Set<LocalDate>,
+    prefs: ForjaPrefs,
+    db: GymDatabase,
+    revision: Int,
+    onMarkToday: () -> Unit,
+    onRoutines: () -> Unit,
+    onCalendar: () -> Unit,
+    onExercise: (String) -> Unit,
+    onStartWorkout: (Long) -> Unit
+) {
     val today = LocalDate.now()
     val isPresent = today in attendance
     val weekStart = today.minusDays((today.dayOfWeek.value - 1).toLong())
@@ -28,61 +53,53 @@ fun DashboardV2(workouts: List<Workout>, attendance: Set<LocalDate>, prefs: Forj
     val monthCount = attendance.count { YearMonth.from(it) == YearMonth.from(today) }
     val todayRoutines = workouts.filter { today.dayOfWeek.value in it.days }
     val fmt = DateTimeFormatter.ofPattern("EEEE, dd 'de' MMMM", Locale("pt", "BR"))
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(18.dp),
-        verticalArrangement = Arrangement.spacedBy(15.dp)) {
+
+    LazyColumn(
+        contentPadding = PaddingValues(18.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
         item {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Surface(color = Lime, shape = RoundedCornerShape(7.dp)) {
-                    Text("F", modifier = Modifier.padding(horizontal = 13.dp, vertical = 9.dp),
-                        color = Ink, fontWeight = FontWeight.Black)
-                }
-                Spacer(Modifier.width(11.dp))
-                Column {
-                    Text("FORJA GYM", fontWeight = FontWeight.Bold, color = White,
-                        style = MaterialTheme.typography.titleLarge)
-                    Text("VERSÃO 2.0  /  TREINO & DISCIPLINA", color = Muted,
-                        style = MaterialTheme.typography.labelSmall)
+            Surface(color = SurfaceDark, shape = RoundedCornerShape(12.dp)) {
+                Column(Modifier.fillMaxWidth().padding(16.dp)) {
+                    Text(today.format(fmt).replaceFirstChar { it.uppercase() }, color = White,
+                        style = androidx.compose.material3.MaterialTheme.typography.titleLarge)
+                    Spacer(Modifier.height(5.dp))
+                    Text("Resumo do seu treino, constância e próximas ações.", color = Muted,
+                        style = androidx.compose.material3.MaterialTheme.typography.bodySmall)
                 }
             }
-            Spacer(Modifier.height(25.dp))
-            ForjaHeader("Seu painel", "Treinar é construir constância.",
-                today.format(fmt).replaceFirstChar { it.uppercase() })
         }
         item {
             ForjaPanel(Modifier.fillMaxWidth()) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(if (isPresent) Icons.Rounded.CheckCircle else Icons.Rounded.RadioButtonUnchecked,
                         null, tint = Lime)
-                    Spacer(Modifier.width(9.dp))
-                    Text("PRESENÇA DE HOJE", color = Lime,
-                        style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Presença de hoje", color = White, fontWeight = FontWeight.SemiBold)
                 }
-                Spacer(Modifier.height(12.dp))
-                Text(if (isPresent) "Presença confirmada" else "Você foi à academia hoje?",
-                    color = White, style = MaterialTheme.typography.titleLarge)
-                Spacer(Modifier.height(11.dp))
+                Spacer(Modifier.height(10.dp))
+                Text(if (isPresent) "Dia registrado." else "Marque sua ida sem precisar finalizar um treino.",
+                    color = Muted)
+                Spacer(Modifier.height(10.dp))
                 ForjaButton(if (isPresent) "Desmarcar presença" else "Marcar que fui",
                     onMarkToday, Modifier.fillMaxWidth())
-                Spacer(Modifier.height(8.dp))
-                Text("Uma marcação basta. Não precisa finalizar uma rotina.",
-                    color = Muted, style = MaterialTheme.typography.bodySmall)
             }
         }
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
                 Metric("Semana / meta", "$weekly / ${prefs.weeklyGoal}", Modifier.weight(1f), Lime)
                 Metric("Mês / meta", "$monthCount / ${prefs.monthlyGoal}", Modifier.weight(1f))
-                Metric("Sequência", "${currentStreak(attendance)}", Modifier.weight(1f))
+                Metric("Sequência", "${currentStreak(attendance)} dias", Modifier.weight(1f))
             }
         }
+
         item {
-            ForjaTitleRow("Treino programado", "${todayRoutines.size} para hoje")
+            ForjaTitleRow("Treinos de hoje", if (todayRoutines.isEmpty()) "Nenhum" else "${todayRoutines.size} disponível(is)")
         }
         if (todayRoutines.isEmpty()) item {
-            EmptyHint("Nenhuma rotina para hoje", "Defina seus dias de treino na aba Rotinas.")
-            Spacer(Modifier.height(9.dp))
+            EmptyHint("Nada programado para hoje", "Defina dias da semana nas suas rotinas.")
             OutlinedButton(onClick = onRoutines, modifier = Modifier.fillMaxWidth()) {
-                Text("Abrir minhas rotinas")
+                Text("Abrir rotinas")
             }
         }
         todayRoutines.forEach { workout ->
@@ -90,20 +107,24 @@ fun DashboardV2(workouts: List<Workout>, attendance: Set<LocalDate>, prefs: Forj
                 val entries = remember(workout.id, revision) { db.workoutExercises(workout.id) }
                 ForjaPanel(Modifier.fillMaxWidth()) {
                     ForjaTitleRow(workout.name, "${entries.size} exercícios")
-                    Spacer(Modifier.height(9.dp))
-                    if (entries.isEmpty()) {
-                        Text("Adicione exercícios à rotina para consultá-los aqui.", color = Muted,
-                            style = MaterialTheme.typography.bodySmall)
-                    }
-                    entries.take(4).forEach { entry ->
-                        Catalog.get(entry.exerciseId)?.let { e ->
-                            TextButton(onClick = { onExercise(e.id) }, modifier = Modifier.fillMaxWidth(),
-                                contentPadding = PaddingValues(vertical = 4.dp)) {
+                    Spacer(Modifier.height(8.dp))
+                    entries.take(3).forEach { entry ->
+                        Catalog.get(entry.exerciseId)?.let { exercise ->
+                            TextButton(onClick = { onExercise(exercise.id) }, modifier = Modifier.fillMaxWidth()) {
                                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                                    Text(e.name, modifier = Modifier.weight(1f), color = White)
-                                    Icon(Icons.Rounded.ChevronRight, null, tint = Muted)
+                                    Text(exercise.name, modifier = Modifier.weight(1f), color = White)
+                                    Text("${entry.sets}×${entry.reps}", color = Muted)
                                 }
                             }
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        ForjaButton("Iniciar treino", { onStartWorkout(workout.id) }, Modifier.weight(1f))
+                        OutlinedButton(onClick = { onRoutines() }, modifier = Modifier.weight(1f)) {
+                            Icon(Icons.Rounded.FitnessCenter, null)
+                            Spacer(Modifier.width(5.dp))
+                            Text("Editar")
                         }
                     }
                 }
@@ -111,14 +132,15 @@ fun DashboardV2(workouts: List<Workout>, attendance: Set<LocalDate>, prefs: Forj
         }
         item {
             ForjaPanel(Modifier.fillMaxWidth()) {
-                ForjaTitleRow("Registro de disciplina", "Ver calendário")
-                Spacer(Modifier.height(9.dp))
-                Text("Seus dias treinados, sequências e metas num só lugar.",
-                    color = Muted, style = MaterialTheme.typography.bodySmall)
+                ForjaTitleRow("Disciplina", "Calendário anual e metas")
+                Spacer(Modifier.height(8.dp))
+                Text("Acompanhe presença, metas, sequência atual e visão anual.", color = Muted,
+                    style = androidx.compose.material3.MaterialTheme.typography.bodySmall)
                 Spacer(Modifier.height(10.dp))
                 OutlinedButton(onClick = onCalendar, modifier = Modifier.fillMaxWidth()) {
                     Icon(Icons.Rounded.CalendarMonth, null)
-                    Spacer(Modifier.width(7.dp)); Text("Abrir calendário")
+                    Spacer(Modifier.width(7.dp))
+                    Text("Abrir disciplina")
                 }
             }
         }

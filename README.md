@@ -1,8 +1,18 @@
-# FORJA Gym 2.0.0 — Android nativo em Kotlin
+# FORJA Gym 2.1.0 — Android nativo em Kotlin
 
 Aplicativo pessoal de musculação com interface grafite/verde, sem conta e sem serviço de nuvem obrigatório. **Atualização do projeto FORJA Gym 1.0.0**, preservando o mesmo `applicationId = com.forjagym.app` e a mesma estrutura de banco SQLite.
 
-## O que há na 2.0
+## O que há na 2.1
+
+
+## Novidades da 2.1
+
+- **Modo treino ativo** com séries marcáveis, descanso e resumo.
+- **Minha academia**: assento, ajuste, observação e foto personalizada por aparelho.
+- **Substituições inteligentes** dentro da ficha do exercício.
+- **Registro de cargas com recorde pessoal**, volume total e 1RM estimado.
+- **Fotos também no seletor de exercícios das rotinas**.
+- **Menos títulos fixos no topo**, interface mais limpa.
 
 - **Hoje** — resumo do treino, presença em um toque, meta da semana/mês e sequência de presença.
 - **Rotinas** — criar, renomear, remover, selecionar dias da semana, configurar séries, repetições e descansos e consultar exercícios.
@@ -26,7 +36,7 @@ Existem fotografias para **tipos representativos de aparelhos**, não uma foto �
 
    ```powershell
    git add -A
-   git commit -m "FORJA Gym 2.0.0"
+   git commit -m "FORJA Gym 2.1.0"
    git push origin main
    ```
 
@@ -40,7 +50,7 @@ O workflow inclui a correção `packages: platform-tools` para evitar o erro ant
 ## Tecnologia / arquivos
 
 - Android, Kotlin 2.2.20, Jetpack Compose / Material 3, SQLiteOpenHelper, Coil 2.7.0.
-- `MainActivity.kt` — navegação 2.0.
+- `MainActivity.kt` — navegação 2.1.
 - `LibraryV2.kt` / `MachineMedia.kt` — catálogo visual, imagens, instruções e foto pessoal.
 - `DisciplineV2.kt` — calendário mensal, visão anual, metas e sequência.
 - `LoadsV2.kt` — registro rápido, gráficos e histórico.
@@ -54,4 +64,4 @@ O workflow inclui a correção `packages: platform-tools` para evitar o erro ant
 - Não há vídeo demonstrativo, treinador virtual ou orientação individualizada.
 - O registro rápido representa uma carga/repetição por lançamento; não há séries individuais.
 - As instruções são gerais e devem ser ajustadas com profissional habilitado.
-- A **compilação final da versão 2.0 não foi executada neste ambiente**. Faça a execução do GitHub Actions para verificar o APK.
+- A **compilação final da versão 2.1 não foi executada neste ambiente**. Faça a execução do GitHub Actions para verificar o APK.
