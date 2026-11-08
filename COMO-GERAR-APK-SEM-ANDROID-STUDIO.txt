@@ -1,39 +1,30 @@
-FORJA GYM — COMO GERAR UM APK SEM ANDROID STUDIO
+FORJA GYM 2.0.0 — COMO ATUALIZAR O CÓDIGO E GERAR APK
+=====================================================
 
-ATENCAO: Este arquivo ZIP contem o CODIGO-FONTE do aplicativo e a configuracao
-para compilacao online pelo GitHub Actions. NAO ha APK compilado dentro dele.
+1) Extraia FORJA-Gym-2.0.0-Android-Kotlin.zip.
+2) Abra a pasta extraída ForjaGym.
+3) Copie TODOS os arquivos e subpastas internos para a pasta local do projeto Git
+   que você já enviou para: https://github.com/Renaton0/Aplicativo-Gym
+   Substitua os existentes; não apague .git.
+   Inclua .github/workflows/gerar-apk.yml (já corrigido).
+4) Abra o terminal na pasta local do repositório e rode:
 
-Voce precisa: uma conta gratuita do GitHub, um computador com internet e
-acesso ao repositorio. Nao e necessario instalar Android Studio nem SDK.
+   git add -A
+   git commit -m "FORJA Gym 2.0.0"
+   git push origin main
 
-1. Descompacte o ZIP em seu PC.
-2. No GitHub, crie um repositorio novo para o aplicativo (ex.: forja-gym).
-   No inicio, escolha criar sem README, sem .gitignore e sem licenca.
-3. Envie para o repositorio TODOS os arquivos da pasta ForjaGym,
-   incluindo a pasta oculta '.github' com o workflow de build.
-   Se usar Git instalado, execute dentro da pasta ForjaGym:
+5) Acesse https://github.com/Renaton0/Aplicativo-Gym/actions
+6) Abra a execução "Gerar APK Android" do último commit.
+7) Quando ficar VERDE, clique em "ForjaGym-APK-instalavel" (Artifacts).
+8) Baixe e extraia o ZIP do GitHub. Instale app-debug.apk no Android.
 
-      git init
-      git add -A
-      git commit -m "Primeiro build Android"
-      git branch -M main
-      git remote add origin https://github.com/SEU-USUARIO/forja-gym.git
-      git push -u origin main
+ATENÇÃO: APKs debug gerados em execuções diferentes do GitHub podem ter
+assinaturas diferentes. O Android pode recusar instalar 2.0 por cima de 1.0.
+Não desinstale 1.0 se precisar preservar os dados ainda não copiados.
+Desinstalar apaga normalmente os dados locais do aplicativo.
 
-   Troque SEU-USUARIO pelo nome de sua conta, e 'forja-gym' pelo repositorio real.
-4. No GitHub, abra a aba Actions > Gerar APK Android.
-   O build inicia automaticamente apos o primeiro push para 'main'.
-   Caso nao inicie, clique em Run workflow > Run workflow.
-5. Ao concluir COM SUCESSO, abra a execucao e baixe o arquivo
-   "ForjaGym-APK-instalavel" na secao Artifacts.
-6. Descompacte esse arquivo baixado; dentro estara app-debug.apk.
-7. Transfira o .apk para seu celular Android 8.0 ou mais recente e toque
-   nele para instalar. O Android pode pedir autorizacao para instalar
-   aplicativos a partir do gerenciador de arquivos.
+Os dados principais funcionam offline; as fotografias do Commons exigem
+internet na primeira visualização. O aplicativo também permite usar fotos
+locais pessoais de equipamentos.
 
-AVISO: O projeto ainda NAO foi compilado/testado. O workflow e uma rota
-para compilacao, nao uma garantia de que ela tera sucesso sem correcoes.
-Se o build falhar, consulte os erros na aba Actions antes de instalar.
-
-NAO baixe APKs de fontes desconhecidas; use somente o arquivo produzido
-em seu proprio repositorio.
+O APK 2.0 ainda precisa passar pela compilação real do GitHub Actions.

@@ -1,0 +1,200 @@
+package com.forjagym.app
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
+
+private val weekNames = listOf("Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom")
+
+@Composable
+fun RoutinesTabV2(workouts: List<Workout>, db: GymDatabase, onChange: () -> Unit,
+                  onOpen: (Long) -> Unit) {
+    var create by remember { mutableStateOf(false) }
+    var toDelete by remember { mutableStateOf<Workout?>(null) }
+    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(18.dp),
+        verticalArrangement = Arrangement.spacedBy(13.dp)) {
+        item {
+            ForjaHeader("Planejamento", "Minhas rotinas", "Organize seus treinos sem perder o histórico.")
+            Spacer(Modifier.height(17.dp))
+            ForjaButton("+ Nova rotina", { create = true }, Modifier.fillMaxWidth())
+        }
+        if (workouts.isEmpty()) item {
+            EmptyHint("Nenhuma rotina criada", "Crie seu Treino A, B, C ou sua própria divisão.")
+        }
+        items(workouts, key = { it.id }) { workout ->
+            ForjaPanel(Modifier.fillMaxWidth()) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text(workout.name, style = MaterialTheme.typography.titleLarge, color = White)
+                        Spacer(Modifier.height(4.dp))
+                        Text("${db.workoutExercises(workout.id).size} exercícios • " +
+                            if (workout.days.isEmpty()) "sem dias definidos"
+                            else workout.days.sorted().joinToString(" · ") { weekNames[it - 1] },
+                            color = Muted, style = MaterialTheme.typography.bodySmall)
+                    }
+                    IconButton(onClick = { toDelete = workout }) {
+                        Icon(Icons.Rounded.DeleteOutline, "Excluir rotina", tint = Muted)
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
+                OutlinedButton(onClick = { onOpen(workout.id) }, modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(8.dp)) { Text("Editar rotina") }
+            }
+        }
+    }
+    if (create) RoutineNameDialogV2("Criar rotina", "Treino A — Peito", onDismiss = { create = false }) {
+        val id = db.addWorkout(it); onChange(); create = false; onOpen(id)
+    }
+    toDelete?.let { workout ->
+        AlertDialog(onDismissRequest = { toDelete = null }, title = { Text("Excluir rotina?") },
+            text = { Text("A rotina e sua lista de exercícios serão apagadas. O histórico de cargas continuará salvo.") },
+            confirmButton = { TextButton(onClick = {
+                db.removeWorkout(workout.id); onChange(); toDelete = null
+            }) { Text("Excluir") } },
+            dismissButton = { TextButton(onClick = { toDelete = null }) { Text("Cancelar") } })
+    }
+}
+
+@Composable
+private fun RoutineNameDialogV2(title: String, placeholder: String, initial: String = "",
+                                 onDismiss: () -> Unit, onSave: (String) -> Unit) {
+    var input by remember(initial) { mutableStateOf(initial) }
+    AlertDialog(onDismissRequest = onDismiss, title = { Text(title) }, text = {
+        OutlinedTextField(value = input, onValueChange = { input = it },
+            placeholder = { Text(placeholder) }, label = { Text("Nome") }, singleLine = true)
+    }, confirmButton = { TextButton(onClick = { onSave(input.trim()) },
+        enabled = input.isNotBlank()) { Text("Salvar") } },
+       dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } })
+}
+
+@Composable
+fun RoutineEditorV2(workout: Workout, db: GymDatabase, revision: Int,
+                    onChange: () -> Unit, onBack: () -> Unit,
+                    onExercise: (String) -> Unit) {
+    var rename by remember { mutableStateOf(false) }
+    var add by remember { mutableStateOf(false) }
+    var editing by remember { mutableStateOf<WorkoutExercise?>(null) }
+    var deleting by remember { mutableStateOf<WorkoutExercise?>(null) }
+    val planned = remember(workout.id, revision) { db.workoutExercises(workout.id) }
+    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(18.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        item {
+            TextButton(onClick = onBack) {
+                Icon(Icons.Rounded.ArrowBack, "Voltar")
+                Spacer(Modifier.width(6.dp)); Text("Minhas rotinas")
+            }
+            Spacer(Modifier.height(6.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) { ForjaHeader("Editor", workout.name, "Dias e exercícios planejados") }
+                IconButton(onClick = { rename = true }) {
+                    Icon(Icons.Rounded.Edit, "Renomear", tint = Lime)
+                }
+            }
+        }
+        item {
+            ForjaPanel(Modifier.fillMaxWidth()) {
+                ForjaTitleRow("Dias da semana")
+                Spacer(Modifier.height(7.dp))
+                Text("Escolha os dias em que esta rotina deve aparecer na tela inicial.",
+                    style = MaterialTheme.typography.bodySmall, color = Muted)
+                Spacer(Modifier.height(10.dp))
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                    items((1..7).toList()) { day ->
+                        FilterChip(selected = day in workout.days, onClick = {
+                            db.updateDays(workout.id, if (day in workout.days) workout.days - day
+                                else workout.days + day)
+                            onChange()
+                        }, label = { Text(weekNames[day - 1]) }, shape = RoundedCornerShape(7.dp))
+                    }
+                }
+            }
+        }
+        item {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("Exercícios • ${planned.size}", style = MaterialTheme.typography.titleMedium, color = White)
+                TextButton(onClick = { add = true }) {
+                    Icon(Icons.Rounded.Add, null, Modifier.size(18.dp))
+                    Text("Adicionar")
+                }
+            }
+        }
+        if (planned.isEmpty()) item {
+            EmptyHint("Lista vazia", "Adicione exercícios a partir do catálogo.")
+        }
+        items(planned, key = { it.id }) { entry ->
+            val exercise = Catalog.get(entry.exerciseId)
+            if (exercise != null) ForjaPanel(Modifier.fillMaxWidth()) {
+                Text(exercise.name, style = MaterialTheme.typography.titleMedium, color = White)
+                Text(exercise.equipment, style = MaterialTheme.typography.bodySmall, color = Muted)
+                Spacer(Modifier.height(7.dp))
+                Text("${entry.sets} séries  ·  ${entry.reps} reps  ·  ${entry.restSeconds}s intervalo",
+                    color = Lime, style = MaterialTheme.typography.bodySmall)
+                Spacer(Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    OutlinedButton(onClick = { editing = entry }, modifier = Modifier.weight(1f)) {
+                        Text("Editar")
+                    }
+                    OutlinedButton(onClick = { onExercise(exercise.id) }, modifier = Modifier.weight(1f)) {
+                        Text("Ficha")
+                    }
+                    IconButton(onClick = { deleting = entry }) {
+                        Icon(Icons.Rounded.DeleteOutline, "Remover exercício", tint = Muted)
+                    }
+                }
+            }
+        }
+    }
+    if (rename) RoutineNameDialogV2("Renomear rotina", "Nome", workout.name,
+        onDismiss = { rename = false }) {
+        db.renameWorkout(workout.id, it); rename = false; onChange()
+    }
+    if (add) ExerciseSelectorV2(onDismiss = { add = false }) {
+        db.addExercise(workout.id, it.id); onChange(); add = false
+    }
+    editing?.let { e ->
+        EditPlannedExerciseV2(e, onDismiss = { editing = null }) { sets, reps, rest ->
+            db.updateExercise(e.id, sets, reps, rest); onChange(); editing = null
+        }
+    }
+    deleting?.let { e ->
+        AlertDialog(onDismissRequest = { deleting = null }, title = { Text("Remover exercício?") },
+            confirmButton = { TextButton(onClick = {
+                db.removeExercise(e.id); onChange(); deleting = null
+            }) { Text("Remover") } },
+            dismissButton = { TextButton(onClick = { deleting = null }) { Text("Cancelar") } })
+    }
+}
+
+@Composable
+private fun EditPlannedExerciseV2(entry: WorkoutExercise, onDismiss: () -> Unit,
+                                  onSave: (Int, Int, Int) -> Unit) {
+    var sets by remember { mutableStateOf(entry.sets.toString()) }
+    var reps by remember { mutableStateOf(entry.reps.toString()) }
+    var rest by remember { mutableStateOf(entry.restSeconds.toString()) }
+    val a = sets.toIntOrNull(); val b = reps.toIntOrNull(); val c = rest.toIntOrNull()
+    val valid = a != null && a in 1..100 && b != null && b in 1..1000 && c != null && c in 0..3600
+    AlertDialog(onDismissRequest = onDismiss, title = { Text("Editar exercício") }, text = {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedTextField(sets, { sets = it }, label = { Text("Séries") }, singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+            OutlinedTextField(reps, { reps = it }, label = { Text("Repetições") }, singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+            OutlinedTextField(rest, { rest = it }, label = { Text("Descanso (segundos)") }, singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+        }
+    }, confirmButton = { TextButton(onClick = { if (valid) onSave(a!!, b!!, c!!) },
+        enabled = valid) { Text("Salvar") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } })
+}

@@ -1,60 +1,57 @@
-# FORJA Gym 1.0.0 — Android / Kotlin
+# FORJA Gym 2.0.0 — Android nativo em Kotlin
 
-Aplicativo de academia **nativo e offline**, com interface em português, desenvolvido com Kotlin, Jetpack Compose, Material 3 e SQLite (sem login, sem backend e sem anúncios).
+Aplicativo pessoal de musculação com interface grafite/verde, sem conta e sem serviço de nuvem obrigatório. **Atualização do projeto FORJA Gym 1.0.0**, preservando o mesmo `applicationId = com.forjagym.app` e a mesma estrutura de banco SQLite.
 
-## Funcionalidades
+## O que há na 2.0
 
-1. **Início:** treino programado para o dia, frequência da semana e botão para marcar/desmarcar a presença de hoje.
-2. **Rotinas:** criar, renomear e excluir rotinas; selecionar dias da semana; adicionar/remover exercícios; configurar séries, repetições e descanso.
-3. **Máquinas:** catálogo offline com **151 exercícios e variações**, agrupados em 13 grupos, incluindo aparelhos guiados, polias, livres e cardio. Busca por nome e equipamento; adicionar diretamente a uma rotina.
-4. **Presença:** duas visualizações (Marcar dias e Mapa de consistência); calendário mês a mês com bolinhas **pretas** para datas não registradas e **verdes** para presença; tocar em datas de hoje ou passadas para marcar/desmarcar. Total mensal, semanal e sequência de dias.
-5. **Cargas:** selecionar um exercício, registrar carga em kg e repetições, visualizar recorde, última carga, evolução (gráfico dos 30 registros mais recentes), histórico completo e excluir um registro.
+- **Hoje** — resumo do treino, presença em um toque, meta da semana/mês e sequência de presença.
+- **Rotinas** — criar, renomear, remover, selecionar dias da semana, configurar séries, repetições e descansos e consultar exercícios.
+- **Aparelhos** — 151 exercícios/variações em 13 grupos, busca, ficha com músculos trabalhados, equipamento e instruções básicas. Fotografias reais de referência do Wikimedia Commons em categorias compatíveis, com indicação de autoria/licença/fonte. Em exercícios sem imagem específica, exibe «Sem foto» em vez de mostrar aparelho errado. **Também é possível escolher uma foto tirada no próprio celular para qualquer exercício**, mantida com permissão de acesso persistente.
+- **Disciplina** — bolinhas pretas e verdes no calendário mensal, registro de presença independente do treino, visão dos 12 meses, sequência atual, meta semanal de 1–7 dias e meta mensal de 1–31 dias, editáveis.
+- **Cargas** — registro rápido de kg e repetições, preenche com a última carga, ajustes de ±2,5 kg, recorde, gráfico e histórico completo.
+- **Visual** — paleta grafite, bordas discretas, tipografia mais contida, cartões utilitários e espaçamento consistente.
 
-Todos os dados permanecem no banco `forja_gym.db` no armazenamento privado do aplicativo. Uma reinstalação pode apagar os dados, conforme as configurações de backup do Android. O catálogo não garante cobrir todas as máquinas de todas as academias.
+## Fotos e uso offline
 
-## Abrir no Android Studio
+Os **dados** de rotina, carga, presença e metas são locais e utilizáveis sem internet. As **fotos de referência** são carregadas pela internet a partir do Wikimedia Commons, podendo ser reutilizadas a partir do cache do Android/Coil; quando indisponíveis, há um placeholder. Fotos adicionadas pelo usuário vêm do armazenamento local do celular e dependem de o arquivo permanecer acessível.
 
-1. Instale uma versão atual do **Android Studio** e o **Android SDK 36**.
-2. Extraia o ZIP deste projeto e abra a pasta `ForjaGym` em **File > Open**.
-3. Conecte um dispositivo Android com depuração USB ou escolha um emulador (**Android 8.0/API 26 ou superior**).
-4. Aguarde a sincronização Gradle, depois clique em **Run ▶**. Os scripts `gradlew` e `gradlew.bat` também funcionam e baixam o JAR oficial do Gradle Wrapper na primeira execução, conferindo seu SHA-256.
-5. Para gerar um APK: **Build > Build App Bundle(s) / APK(s) > Build APK(s)**. O arquivo gerado normalmente ficará em `app/build/outputs/apk/debug/app-debug.apk`.
+Existem fotografias para **tipos representativos de aparelhos**, não uma foto única para cada um dos 151 exercícios. A seleção é uma **referência visual**, não garante a mesma marca/modelo da academia. Todos os arquivos licenciados e os créditos estão em [`CREDITOS-FOTOS.md`](CREDITOS-FOTOS.md); no aplicativo, toque nos créditos da ficha para visitar a fonte. Licenças livres exigem atribuição — consulte cada fonte antes de redistribuir ou modificar as imagens.
 
-O Android Studio precisa de acesso à Internet para baixar Gradle, Android Gradle Plugin e dependências na primeira sincronização. **O ZIP contém o código-fonte; o APK não foi compilado neste ambiente**, pois não há Android SDK/Gradle instalados aqui. Use JDK 17 ou superior compatível com o Android Gradle Plugin.
+## Atualizar seu repositório no GitHub (sem Android Studio)
 
-## Estrutura
+1. Extraia este ZIP. Abra a pasta `ForjaGym`.
+2. No seu computador, abra a pasta local que já tem `.git` e está conectada ao repositório `Renaton0/Aplicativo-Gym`.
+3. **Copie todo o conteúdo interno de `ForjaGym` para essa pasta existente**, substituindo os arquivos iguais. Inclua a pasta oculta `.github`. **Não apague sua pasta `.git`**.
+4. Abra o Terminal nessa pasta e execute:
 
-- `app/src/main/java/com/forjagym/app/Catalog.kt` — 151 opções de exercícios, grupos e equipamentos.
-- `GymDatabase.kt` — persistência SQLite e operações CRUD.
-- `Screens.kt` — todas as telas, diálogos, calendário e gráfico.
-- `MainActivity.kt` — navegação e estado do aplicativo.
-- `Theme.kt` — paleta verde/preto, estilo escuro.
+   ```powershell
+   git add -A
+   git commit -m "FORJA Gym 2.0.0"
+   git push origin main
+   ```
 
-## Limitações da versão 1.0.0
+5. Acesse: https://github.com/Renaton0/Aplicativo-Gym/actions
+6. Na execução **Gerar APK Android**, espere o sinal verde e abra **Artifacts → ForjaGym-APK-instalavel**. Extraia o ZIP do GitHub e instale `app-debug.apk` no celular.
 
-- Ainda não há sincronização entre celulares, exportação de backup, cronômetro, vídeos, fotos de máquinas ou ajustes para cargas diferentes por série.
-- O registro de carga usa a data corrente; a presença permite datas anteriores.
-- O catálogo é amplo, mas não exaustivo, e deve ser revisado conforme os aparelhos da academia frequentada.
-- Não substitui orientação de profissional de educação física. O app organiza dados, não prescreve treinos.
+O workflow inclui a correção `packages: platform-tools` para evitar o erro antigo de `sdkmanager tools`.
 
-## Dependências
+**Importante sobre atualização do APK:** `versionCode` mudou de 1 para 2; o app mantém o mesmo identificador/banco, mas APKs de teste gerados em execuções diferentes do GitHub Actions podem ter **assinaturas de depuração distintas**. Nessa situação o Android pode negar a instalação por cima, exigindo desinstalar a versão anterior, o que **apaga os dados locais**. Não desinstale a 1.0 se precisar manter dados e ainda não tiver um método de backup. Para atualização consistente daqui em diante, configure uma assinatura persistente/privada em um workflow futuro. Não publique um keystore de produção no repositório.
 
-- Android Gradle Plugin 8.11.1 / Gradle 8.14
-- Kotlin 2.2.20 + plugin Compose 2.2.20
-- Jetpack Compose BOM 2025.08.01
-- AndroidX Activity Compose 1.10.1
-- SQLiteOpenHelper do Android
+## Tecnologia / arquivos
 
-Projeto de código-fonte para personalização e evolução.
+- Android, Kotlin 2.2.20, Jetpack Compose / Material 3, SQLiteOpenHelper, Coil 2.7.0.
+- `MainActivity.kt` — navegação 2.0.
+- `LibraryV2.kt` / `MachineMedia.kt` — catálogo visual, imagens, instruções e foto pessoal.
+- `DisciplineV2.kt` — calendário mensal, visão anual, metas e sequência.
+- `LoadsV2.kt` — registro rápido, gráficos e histórico.
+- `RoutinesV2.kt` — CRUD de rotinas e exercícios.
+- `DashboardV2.kt`, `ProfessionalUI.kt`, `Theme.kt` — interface e painel inicial.
+- `GymDatabase.kt`, `Catalog.kt` — banco e catálogo original preservados.
 
-## Gerar APK SEM Android Studio (pela nuvem)
+## Limitações
 
-Este projeto agora inclui `.github/workflows/gerar-apk.yml`, que permite compilar
-um APK debug instalável usando GitHub Actions. Depois de enviar o projeto inteiro
-para um repositório GitHub, abra **Actions > Gerar APK Android** e baixe o artefato
-**ForjaGym-APK-instalavel**, extraia-o e instale `app-debug.apk` no celular.
-Leia `COMO-GERAR-APK-SEM-ANDROID-STUDIO.txt` para o passo a passo completo.
-
-**Não há um APK compilado neste ZIP:** o ambiente de criação não dispõe do SDK
-Android, do Gradle nem de acesso para baixar essas ferramentas. A primeira execução
-do workflow também pode revelar erros de compilação ainda não identificados.
+- Não há sincronização na nuvem nem backup/exportação de dados por enquanto.
+- Não há vídeo demonstrativo, treinador virtual ou orientação individualizada.
+- O registro rápido representa uma carga/repetição por lançamento; não há séries individuais.
+- As instruções são gerais e devem ser ajustadas com profissional habilitado.
+- A **compilação final da versão 2.0 não foi executada neste ambiente**. Faça a execução do GitHub Actions para verificar o APK.
